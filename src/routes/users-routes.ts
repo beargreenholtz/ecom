@@ -16,10 +16,10 @@ router.post(
   [
     check('name').not().isEmpty(),
     check('username').not().isEmpty(),
-    check('email')
-      .normalizeEmail()
-      .isEmail(),
-    check('password').isLength({ min: 6 }),
+    check('email').normalizeEmail().isEmail(),
+    check('password')
+      .isLength({ min: 8 })
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{8,}$/),
   ],
   signUp
 );

@@ -8,7 +8,17 @@ const userSchema = new Schema({
   name: { type: String, required: true },
   username: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true, minlength: 6 },
+  password: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function (password: string) {
+        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{8,}$/.test(password);
+      },
+      message:
+        'Password must contain at least 1 lowercase letter, 1 uppercase letter, and 1 special character.',
+    },
+  },
   role: {
     type: String,
     enum: ['user', 'admin', 'moderator', 'guest'],
