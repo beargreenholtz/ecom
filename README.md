@@ -25,8 +25,6 @@ The Ecom Project Backend is built with Node.js and Express.js. It provides APIs 
 
 1.  Install dependencies:
 
-    bashCopy code
-
     `npm install`
 
 2.  Set up environment variables:
@@ -34,8 +32,6 @@ The Ecom Project Backend is built with Node.js and Express.js. It provides APIs 
     Create a `.env` file in the root directory and add the necessary environment variables. You can refer to the provided `.env.example` as a template.
 
 3.  Start the development server:
-
-    bashCopy code
 
     `npm run start:dev`
 
