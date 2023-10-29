@@ -61,7 +61,7 @@ If you want to contribute to this project, please follow these steps:
 License
 -------
 
-This project is licensed under the UNLICENSED license. See the [LICENSE](https://chat.openai.com/c/LICENSE) file for details.
+This project is licensed under the UNLICENSED license.
 
 * * * * *
 
