@@ -1,6 +1,6 @@
 `# Ecom backend project
 
-This is the backend component of the Movie Project application.
+This is the backend component of the Ecom Project application.
 
 ## Table of Contents
 
@@ -13,7 +13,7 @@ This is the backend component of the Movie Project application.
 
 ## Description
 
-The Movie Project Backend is built with Node.js and Express.js. It provides APIs for managing user authentication, movie data, and more. It uses MongoDB as the database for storing movie-related information.
+The Ecom Project Backend is built with Node.js and Express.js. It provides APIs for managing user authentication, Ecom data, and more. It uses MongoDB as the database for storing Ecom-related information.
 
 ## Installation
 
