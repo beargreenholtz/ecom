@@ -20,7 +20,7 @@ The Ecom Project Backend is built with Node.js and Express.js. It provides APIs 
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/backend.git
+   git clone https://github.com/beargreenholtz/ecom
    cd backend `
 
 1.  Install dependencies:
