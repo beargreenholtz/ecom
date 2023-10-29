@@ -65,4 +65,3 @@ This project is licensed under the UNLICENSED license.
 
 * * * * *
 
-Feel free to customize this template to provide more specific information about your project. Include details about your application's features, architecture, and any other relevant information for developers who want to use or contribute to your project.
