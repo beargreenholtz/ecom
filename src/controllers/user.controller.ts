@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
 import otpGenerator from 'otp-generator';
 import OTP from '../models/otp';
 import { validationResult } from 'express-validator';
@@ -8,131 +8,129 @@ import nodemailer from 'nodemailer';
 import jwt from 'jsonwebtoken';
 import type { RequestHandler } from 'express';
 
-import { TUser } from '../types/user';
+import type { TUser, TRequest } from '../types/user';
 import User from '../models/user';
 import HttpError from '../models/http-error';
-import mailSender from '../utils/mailSender';
+import mailSender from '../utils/mail-sender';
 
 export const signUp: RequestHandler = async (
-  req: Request,
+  req: TRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const errors = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    return next(
-      new HttpError('Invalid inputs passed, please check your data. ', 422)
-    );
-  }
-
-  const name = req.body['name'] as string;
-  const username = req.body['username'] as string;
-  const email = req.body['email'] as string;
-  const password = req.body['password'] as string;
-
-  let existingUser: TUser | null;
-
   try {
-    existingUser = await User.findOne({ email: email });
-  } catch (err) {
-    const error = new HttpError(
-      'Signing up failed, please try again later.',
-      500
-    );
+    const errors = validationResult(req);
 
-    return next(error);
-  }
+    if (!errors.isEmpty()) {
+      return next(
+        new HttpError('Invalid inputs passed, please check your data. ', 422)
+      );
+    }
 
-  if (existingUser) {
-    const error = new HttpError(
-      'User exists already, please login instead.',
-      422
-    );
+    const name = req.body.name;
+    const username = req.body.username;
+    const email = req.body.email;
+    const password = req.body.password;
 
-    return next(error);
-  }
+    let existingUser: TUser | null;
 
-  let hashedPassword;
+    try {
+      existingUser = await User.findOne({ email: email });
+    } catch (err) {
+      const error = new HttpError(
+        'Signing up failed, please try again later.',
+        500
+      );
 
-  try {
-    hashedPassword = await bcrypt.hash(password, 12);
-  } catch (err: unknown) {
-    const error = new HttpError(
-      'Could not create user, please try again ',
-      500
-    );
+      return next(error);
+    }
 
-    throw error;
-  }
+    if (existingUser) {
+      const error = new HttpError(
+        'User exists already, please login instead.',
+        422
+      );
 
-  const createdUser = new User({
-    name,
-    email,
-    username,
-    password: hashedPassword,
-    orders: [],
-    reviews: [],
-  });
+      return next(error);
+    }
 
-  try {
+    if (!password) {
+      const error = new HttpError('no password entered', 422);
+
+      return next(error);
+    }
+
+    let hashedPassword;
+
+    try {
+      hashedPassword = await bcrypt.hash(password, 12);
+    } catch (err: unknown) {
+      const error = new HttpError(
+        'Could not create user, please try again ',
+        500
+      );
+
+      throw error;
+    }
+
+    const createdUser = new User({
+      name,
+      email,
+      username,
+      password: hashedPassword,
+      orders: [],
+      reviews: [],
+    });
+
     await createdUser.save();
-  } catch (err) {
-    const error = new HttpError('Signing up failed, please try again.', 500);
 
-    return next(error);
-  }
+    let token: string;
 
-  let token: string;
+    if (!process.env.JWT_SECRET) {
+      const error = new HttpError('JWT secret key is not set', 500);
+      return next(error);
+    }
 
-  if (!process.env['JWT_SECRET']) {
-    const error = new HttpError('JWT secret key is not set', 500);
-    return next(error);
-  }
-
-  try {
     token = jwt.sign(
       { userId: createdUser.id, email: createdUser.email },
-      process.env['JWT_SECRET'],
+      process.env.JWT_SECRET,
       {
         expiresIn: '1h',
       }
     );
-  } catch (err) {
-    const error = new HttpError('Signing up failed, please try again.', 500);
 
-    return next(error);
+    const transporter = nodemailer.createTransport({
+      service: process.env.MAIL_HOST,
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: 'ecomnow@gmail.com',
+      to: email,
+      subject: 'Welcome to EcomNow',
+      html: '<img src="https://media.istockphoto.com/id/672526776/photo/cheddar-cheese-isolated-on-white-background.jpg?s=612x612&w=0&k=20&c=T6ykJOn4asR7Z21IG9D-ZdNUhEAHFW14lyqeq6a8io0=" alt="Chedder">',
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res
+      .status(201)
+      .json({ userId: createdUser.id, email: createdUser.email, token: token });
+  } catch (error) {
+    next(new HttpError('An error occurred during sign-up.', 500));
   }
-
-  const transporter = nodemailer.createTransport({
-    service: process.env['MAIL_HOST'],
-    auth: {
-      user: process.env['MAIL_USER'],
-      pass: process.env['MAIL_PASS'],
-    },
-  });
-
-  const mailOptions = {
-    from: 'ecomnow@gmail.com',
-    to: email,
-    subject: 'Welcome to EcomNow',
-    html: '<img src="https://media.istockphoto.com/id/672526776/photo/cheddar-cheese-isolated-on-white-background.jpg?s=612x612&w=0&k=20&c=T6ykJOn4asR7Z21IG9D-ZdNUhEAHFW14lyqeq6a8io0=" alt="Chedder">',
-  };
-
-  await transporter.sendMail(mailOptions);
-
-  res
-    .status(201)
-    .json({ userId: createdUser.id, email: createdUser.email, token: token });
 };
 
-export const loginRequest: RequestHandler = async (
-  req: Request,
+export const loginGenerateOtp: RequestHandler = async (
+  req: TRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const email = req.body['email'] as string;
-  const password = req.body['password'] as string;
+  const email = req.body.email;
+  const password = req.body.password;
 
   let existingUser: TUser | null;
 
@@ -147,7 +145,7 @@ export const loginRequest: RequestHandler = async (
     return next(error);
   }
 
-  if (!existingUser) {
+  if (!existingUser || !password) {
     const error = new HttpError(
       'Invalid credentials, could not log you in.',
       401
@@ -159,7 +157,7 @@ export const loginRequest: RequestHandler = async (
   let isValidPassword = false;
 
   try {
-    isValidPassword = await bcrypt.compare(password, existingUser.password!);
+    isValidPassword = await bcrypt.compare(password, existingUser.password);
   } catch (err) {
     const error = new HttpError(
       'Invalid credentials, could not log you in.',
@@ -192,6 +190,12 @@ export const loginRequest: RequestHandler = async (
 
     await OTP.create(otpPayload);
 
+    if (!email) {
+      const error = new HttpError('no email', 401);
+
+      return next(error);
+    }
+
     await mailSender(
       email,
       'Verification Email',
@@ -210,13 +214,13 @@ export const loginRequest: RequestHandler = async (
   }
 };
 
-export const loginWithOtp: RequestHandler = async (
-  req: Request,
+export const loginOtp: RequestHandler = async (
+  req: TRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const email = req.body.email as string;
-  const otp = req.body.otp as string;
+  const email = req.body.email;
+  const otp = req.body.otp;
 
   try {
     const response = await OTP.findOne({ email })
@@ -288,11 +292,11 @@ export const loginWithOtp: RequestHandler = async (
 };
 
 export const passwordResetRequest: RequestHandler = async (
-  req: Request,
+  req: TRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const email = req.body['email'] as string;
+  const email = req.body.email;
 
   const resetToken = crypto.randomBytes(32).toString('hex');
 
@@ -327,12 +331,12 @@ export const passwordResetRequest: RequestHandler = async (
     return next(error);
   }
 
-  const resetLink = `${process.env['CLIENT_URL']}/reset-password/${resetToken}`;
+  const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
   const transporter = nodemailer.createTransport({
-    service: process.env['MAIL_HOST'],
+    service: process.env.MAIL_HOST,
     auth: {
-      user: process.env['MAIL_USER'],
-      pass: process.env['MAIL_PASS'],
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
     },
   });
 
@@ -353,12 +357,12 @@ export const passwordResetRequest: RequestHandler = async (
 };
 
 export const passwordReset: RequestHandler = async (
-  req: Request,
+  req: TRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const resetToken = req.params['resetToken'] as string;
-  const newPassword = req.body['newPassword'] as string;
+  const resetToken = req.params.resetToken;
+  const newPassword = req.body.newPassword;
 
   let user: TUser | null;
 
@@ -375,7 +379,7 @@ export const passwordReset: RequestHandler = async (
     return next(error);
   }
 
-  if (!user) {
+  if (!user || !newPassword) {
     const error = new HttpError('Invalid or expired reset token.', 400);
     return next(error);
   }
@@ -408,3 +412,9 @@ export const passwordReset: RequestHandler = async (
 
   res.json({ message: 'Password reset successful.' });
 };
+
+// export const signUpWithGoogle: RequestHandler = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) => {};

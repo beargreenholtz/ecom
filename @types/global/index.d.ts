@@ -7,6 +7,8 @@ declare global {
       readonly MAIL_HOST: string;
       readonly MAIL_USER: string;
       readonly MAIL_PASS: string;
+      readonly CLIENT_URL: string;
+      readonly GOOGLE_OAUTH_SECRET: string;
     }
   }
 }

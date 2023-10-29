@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
+import { passowrdvaliteregex } from '../utils/password-validate';
 import { TUser } from 'src/types/user';
 
 const Schema = mongoose.Schema;
@@ -12,8 +13,8 @@ const userSchema = new Schema({
     type: String,
     required: true,
     validate: {
-      validator: function (password: string) {
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{8,}$/.test(password);
+      validator: (password: string) => {
+        return passowrdvaliteregex.test(password);
       },
       message:
         'Password must contain at least 1 lowercase letter, 1 uppercase letter, and 1 special character.',

@@ -1,4 +1,5 @@
 import { Document } from 'mongoose';
+import type { Request } from 'express';
 
 enum UserEnum {
   'user',
@@ -19,3 +20,18 @@ export type TUser = Document & {
   resetToken?: string;
   resetTokenExpiration?: number;
 };
+
+type TBody = {
+  name?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  otp?: string;
+  newPassword?: string;
+};
+
+type TParams = {
+  resetToken?: string;
+};
+
+export type TRequest = Request<TParams, {}, TBody>;
