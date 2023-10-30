@@ -12,6 +12,7 @@ import type { TUser, TRequest } from '../types/user';
 import User from '../models/user';
 import HttpError from '../models/http-error';
 import mailSender from '../utils/mail-sender';
+import passport from 'passport';
 
 export const signUp: RequestHandler = async (
   req: TRequest,
@@ -291,7 +292,7 @@ export const loginOtp: RequestHandler = async (
   }
 };
 
-export const passwordResetRequest: RequestHandler = async (
+export const passwordResetGenertor: RequestHandler = async (
   req: TRequest,
   res: Response,
   next: NextFunction
@@ -331,7 +332,7 @@ export const passwordResetRequest: RequestHandler = async (
     return next(error);
   }
 
-  const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+  const resetLink = `${process.env.REDIRECT_URI}/reset-password/${resetToken}`;
   const transporter = nodemailer.createTransport({
     service: process.env.MAIL_HOST,
     auth: {
@@ -413,8 +414,42 @@ export const passwordReset: RequestHandler = async (
   res.json({ message: 'Password reset successful.' });
 };
 
-// export const signUpWithGoogle: RequestHandler = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {};
+export const callbackGoogleAuthHandler: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  await passport.authenticate('google', {
+    failureRedirect: '/user/failedgoogleauth',
+  })(req, res, () => {
+    try {
+      let token: string;
+
+      if (!process.env.JWT_SECRET) {
+        const error = new HttpError('JWT secret key is not set', 500);
+        return next(error);
+      }
+
+      token = jwt.sign(
+        { userId: req.user?._id, email: req.user?.email },
+        process.env['JWT_SECRET'],
+        {
+          expiresIn: '1h',
+        }
+      );
+
+      res.json({
+        userId: req.user?._id,
+        email: req.user?.email,
+        token: token,
+      });
+    } catch (err) {
+      const error = new HttpError('Google Auth Error', 500);
+      return next(error);
+    }
+  });
+};
+
+export const failedgoogleauth: RequestHandler = async (_req, res) => {
+  res.send('Failed');
+};

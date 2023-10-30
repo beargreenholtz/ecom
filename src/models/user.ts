@@ -7,11 +7,11 @@ const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
   name: { type: String, required: true },
-  username: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  username: { type: String, required: false },
+  email: { type: String, required: true },
   password: {
     type: String,
-    required: true,
+    required: false,
     validate: {
       validator: (password: string) => {
         return passowrdvaliteregex.test(password);
@@ -26,8 +26,13 @@ const userSchema = new Schema({
     default: 'user',
     required: false,
   },
+  googleId: { type: String, required: false },
   resetToken: { type: String, required: false },
   resetTokenExpiration: { Number: String, required: false },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
   orders: [{ type: mongoose.Types.ObjectId, required: false, ref: 'Order' }],
   reviews: [{ type: mongoose.Types.ObjectId, required: false, ref: 'Review' }],
 });

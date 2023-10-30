@@ -10,6 +10,7 @@ enum UserEnum {
 
 export type TUser = Document & {
   readonly _id: string;
+  readonly id: string;
   readonly name: string;
   readonly username: string;
   readonly email: string;
@@ -17,6 +18,7 @@ export type TUser = Document & {
   readonly role: UserEnum;
   readonly orders: string[];
   readonly reviews: string[];
+  readonly googleId: string;
   resetToken?: string;
   resetTokenExpiration?: number;
 };
